@@ -1,0 +1,462 @@
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>5-1</title>
+</head>
+<body>
+
+<投稿削除><br>
+<form action="" method="post">
+    投稿番号： <input type="number" name="delnum" min="1"> <br>
+    パスワード：<input type="password" name="pas" minlength="4">
+    <input type="submit" value="削除">
+</form>
+<?php
+    //データベースにアクセス
+    $dsn = '***************';
+    $user = '******';
+    $password = '********';
+    $pdo = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+    
+    //データベース内に削除投稿記憶テーブル「5_1_num」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1_num"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+	. "no integer"
+	.");";
+	$stmt = $pdo->query($sql);
+    
+    //データベース内に最新投稿番号記憶テーブル「5_1_lastnumber」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1_lastnumber"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+	. "no integer"
+	.");";
+	$stmt = $pdo->query($sql);
+
+    //最新の投稿番号を取得
+    $sql = 'SELECT * FROM 5_1_lastnumber';
+	$stmt = $pdo->query($sql);
+	$ln = $stmt->fetchAll();
+	
+	echo "分岐開始<br>";
+	
+    if(empty($ln[0][0])){
+        echo "投稿はまだありません<br>";
+    }
+    else{
+        $no=$ln[0][1];
+        if(!(empty($_POST['delnum']))){
+            if(!(empty($_POST['pas']))){
+                $del = $_POST["delnum"];
+                $karipas = $_POST['pas'];
+                //入力された投稿番号が正しいか確認
+                // echo "lastnumber:".$num[0]."<br>";
+                if($del>$no) echo "<!>既存の投稿番号を入力してください<br>";
+                else{
+                    //削除された投稿番号を読み込む
+                    $sql = 'SELECT * FROM 5_1_num';
+            	    $stmt = $pdo->query($sql);
+            	    $results = $stmt->fetchAll();
+                    $i=0;
+                    while(!empty($results[$i][0])){
+                        $skip_t[$i]=$results[$i][1];
+                        $i++;
+                    }
+                    
+                    
+                    
+                    if(in_array($del-1,$skip_t)) echo "<!>".$del." は削除済みの投稿番号です<br>";
+                    //正しい場合
+                    else{
+                        //パスワードを確認
+                        	$sql = 'SELECT * FROM 5_1_pas';
+                        	$stmt = $pdo->query($sql);
+                        	$pas_t = $stmt->fetchAll();
+    
+                        for($i=0;$i<$no;$i++){
+                            if($del==$pas_t[$i][0]){
+                                if($karipas==$pas_t[$i][1]){
+                                    echo $del."番の投稿を削除しました<br>";
+                                    $del--;
+                                    //テーブル5_1_numに投稿を保存
+                                    $sql = $pdo -> prepare("INSERT INTO 5_1_num (no) VALUES (:no)");
+                                	$sql -> bindParam(':no', $no_t, PDO::PARAM_STR);
+                                	$no_t = $del;
+                                	$sql -> execute();
+                                }
+                                else echo "パスワードが一致しません<br>";
+                            }
+                        }
+                    }
+                }
+            }
+            else echo "パスワードを入力してください<br>";
+        }
+        //投稿番号が未入力の場合&初期表示文章
+        else echo "削除したい既存の投稿番号とパスワードを入力することで投稿を削除することができます<br>";
+    }
+?>
+<br>
+
+<投稿編集><br>
+<form action="" method="post">
+    投稿番号：<input type="number" name="edinum" min="1"><br>
+    編集内容：<input type="text" name="edit" minlength="1"><br>
+    パスワード：<input type="password" name="pas" minlength="4">
+    <input type="submit" value="編集">
+</form>
+<?php
+    //データベースにアクセス
+    $dsn = '********************';
+    $user = '*********';
+    $password = '3z2eZfm7Lv';
+    $pdo = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+    
+    //データベース内に編集済み投稿記憶テーブル「5_1_edi」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1_edi"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+    . "no integer,"
+	. "comment text"
+	.");";
+	$stmt = $pdo->query($sql);
+	
+    //投稿編集フォームに、投稿番号とコメント両方が入力された場合に実行
+    if(!(empty($_POST['edinum']))){
+        if(!(empty($_POST['edit']))){
+            if(!(empty($_POST['pas']))){
+                $edinum = $_POST["edinum"];
+                $editext = $_POST["edit"];
+                $karipas = $_POST["pas"];
+
+                //削除された投稿番号を取得
+                $sql = 'SELECT * FROM 5_1_num';
+            	$stmt = $pdo->query($sql);
+                $results = $stmt->fetchAll();
+                $i=0;
+                while(!empty($results[$i][0])){
+                    $skip_t[$i]=$results[$i][1];
+                    $i++;
+                    }
+                
+                //最新の投稿番号を取得
+                $sql = 'SELECT * FROM 5_1_lastnumber';
+            	$stmt = $pdo->query($sql);
+            	$ln = $stmt->fetchAll();
+
+                //入力された投稿番号が正しいか確認
+                // echo "lastnumber:".$num[0]."<br>";
+                if($edinum>$ln[0][1]) echo "<!>現在の最新の投稿番号は".$ln[0][1]."です。既存の投稿番号を入力してください<br>";
+                else 
+                if(in_array($edinum-1,$skip_t)) echo "<!>".$edinum." は削除済みの投稿番号です<br>";
+                //正しい場合
+                else{
+                    //パスワードを確認
+                    $sql = 'SELECT * FROM 5_1_pas';
+                    $stmt = $pdo->query($sql);
+                    $pas_t = $stmt->fetchAll();
+                    
+                    //一旦表示
+                    // echo "<br>".$pas[0][0]." ".$pas[0][1]."<br>";
+
+                    for($i=0;$i<$no;$i++){
+                        if($edinum==$pas_t[$i][0]){
+                            if($karipas==$pas_t[$i][1]){
+                                $edif="5-1-edi.txt";
+                                //テーブル5_1_ediに投稿を保存
+                                $sql = $pdo -> prepare("INSERT INTO 5_1_edi (no, comment) VALUES (:no, :comment)");
+                            	$sql -> bindParam(':no', $no_t, PDO::PARAM_STR);
+                            	$sql -> bindParam(':comment', $comment_t, PDO::PARAM_STR);
+                            	$no_t = $no;
+                            	$comment_t = $editext;
+                            	$sql -> execute();
+                            	echo $edinum."番の投稿を ".$editext." に編集しました<br>";
+                            }
+                            else echo "パスワードが一致しません<br>";
+                        }
+                    }
+                }
+            }
+            else echo "パスワードを入力してください<br>";
+        }
+        else echo "新しいコメントを入力してください<br>";
+    }
+    else echo "投稿番号とコメント、パスワードを入力することで既存の投稿を編集することができます<br>";
+?>
+<br>
+
+<新規投稿>
+<form action="" method="post">
+    お名前：<input type="text" name="name" minlength="1"><br>
+    コメント：<input type="text" name="coment" minlength="1"><br>
+    パスワード：<input type="password" name="pas" minlength="4">
+    <input type="submit">
+</form>
+<br>
+<?php
+    //データベースにアクセス
+    $dsn = '*********';
+    $user = '*****';
+    $password = '*****';
+    $pdo = new PDO($dsn, $user, $password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
+    
+    //データベース内に投稿記憶テーブル「5_1」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+	. "name char(32),"
+	. "comment TEXT,"
+	. "day date"
+	.");";
+	$stmt = $pdo->query($sql);
+	
+	//データベース内に最新投稿番号記憶テーブル「5_1_lastnumber」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1_lastnumber"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+	. "no integer"
+	.");";
+	$stmt = $pdo->query($sql);
+	
+    //データベース内にパスワード記憶テーブル「5_1_pas」を作成
+    $sql = "CREATE TABLE IF NOT EXISTS 5_1_pas"
+	." ("
+	. "id INT AUTO_INCREMENT PRIMARY KEY,"
+	. "pas varchar(32)"
+	.");";
+	$stmt = $pdo->query($sql);
+	
+
+    if(!(empty($_POST['name']))){
+        if(!(empty($_POST['coment']))){
+            if(!(empty($_POST['pas']))){
+                $name = $_POST["name"];
+                $coment = $_POST["coment"];
+                $pas = $_POST["pas"];
+                $date = date("Y/m/d H:i:s");
+
+                //最新の投稿番号を取得
+                $sql = 'SELECT * FROM 5_1_lastnumber';
+            	$stmt = $pdo->query($sql);
+            	$ln = $stmt->fetchAll();
+            	if(empty($ln[0][1])) $no=1;
+                else $no=$ln[0][1]+1;
+                //テーブル5_1に投稿を保存
+                $sql = $pdo -> prepare("INSERT INTO 5_1 (name, comment, day) VALUES (:name, :comment, :day)");
+            	$sql -> bindParam(':name', $name_t, PDO::PARAM_STR);
+            	$sql -> bindParam(':comment', $comment_t, PDO::PARAM_STR);
+            	$sql -> bindParam(':day', $day, PDO::PARAM_STR);
+            	$name_t = $name;
+            	$comment_t = $coment; //好きな名前、好きな言葉は自分で決めること
+            	$day = $date;
+            	$sql -> execute();
+            	
+                echo "新規コメントを受け付けました<br>";
+                
+                //テーブル5_1_pasに投稿を保存
+                $sql = $pdo -> prepare("INSERT INTO 5_1_pas (pas) VALUES (:pas)");
+            	$sql -> bindParam(':pas', $pas_t, PDO::PARAM_STR);
+            	$pas_t = $pas; //好きな名前、好きな言葉は自分で決めること
+            	$sql -> execute();
+            	
+                //最新の投稿番号を更新
+            	$sql = 'SELECT * FROM 5_1_lastnumber';
+            	$stmt = $pdo->query($sql);
+            	$results = $stmt->fetchAll();
+                
+                if(empty($results[0][0])){
+                    //テーブル5_1_lastnumberに投稿を保存
+                    $sql = $pdo -> prepare("INSERT INTO 5_1_lastnumber (no) VALUES (:no)");
+            	    $sql -> bindParam(':no', $no_t, PDO::PARAM_STR);
+            	    $no_t = $no;
+            	    $sql -> execute();
+            	   // echo "配列resultsにデータが入っていませんでした<br>";
+                }
+                else{
+                    $id = 1;
+                	$sql = 'UPDATE 5_1_lastnumber SET no=:no WHERE id=:id';
+                	$stmt = $pdo->prepare($sql);
+                	$stmt->bindParam(':no', $no, PDO::PARAM_STR);
+                	$stmt->bindParam(':id', $id, PDO::PARAM_INT);
+                	$stmt->execute();
+                // 	echo "配列resultsにデータが入っていました<br>";
+                }
+            }
+            else echo "パスワードを入力してください。投稿を編集削除する際に必要となります<br>";
+        }
+        else echo "コメントが未記入です<br>";
+    }
+    else echo "お名前とコメント、パスワードを入力してください<br>";
+
+
+    echo "<br>＜現在までの投稿＞<br>";
+    
+    $sql = 'SELECT * FROM 5_1';
+	$stmt = $pdo->query($sql);
+	$text_t = $stmt->fetchAll();
+	
+// 	echo "1件目の投稿者名前：".$text_t[0][1]."<br>";
+	
+    if(empty($text_t)) echo "投稿はまだありません<br>";
+    else{
+        // echo "投稿あります<br>";
+        //コメントの編集を反映
+        $sql = 'SELECT * FROM 5_1_edi';
+    	$stmt = $pdo->query($sql);
+    	$editext_t = $stmt->fetchAll();
+        if(!empty($editext_t[0][0])){
+            // echo "投稿編集ループ".$i."回目  ";
+            $i=0;
+            while(!empty($editext_t[$i][0])){
+                $text_t[$editext_t[$i][1]-1][2]=$editext_t[$i][2];
+                $i++;
+            }
+            // echo "コメント更新！<br>";
+        }
+        
+        //削除された投稿の番号を取得
+        $sql = 'SELECT * FROM 5_1_num';
+	    $stmt = $pdo->query($sql);
+	    $results = $stmt->fetchAll();
+        $i=0;
+        while(!empty($results[$i][0])){
+            // echo "投稿削除ループ".$i."回目  ";
+            $skip_t[$i]=$results[$i][1];
+            $i++;
+        }
+        
+        $i=0;
+        while(!empty($text_t[$i][0])){
+            // echo "投稿表示ループ".$i."回目  ";
+            if(empty($skip_t)){
+                // echo "削除された投稿はありませんでした<br>";
+                for($j=0;$j<4;$j++)
+                    echo $text_t[$i][$j]." ";
+                    echo "<br>";
+            }
+            else{
+                if(!in_array($i,$skip_t)){
+                    // echo $i."番目の投稿は存在します";
+                    for($j=0;$j<4;$j++)
+                        echo $text_t[$i][$j]." ";
+                    echo "<br>";
+                }
+                // else echo $i."番目の投稿は削除済みです<br>";
+            }
+            $i++;
+        }
+        echo "<br><br>";
+        
+    }
+    
+    
+    
+    
+    
+//     echo "作成済みテーブル一覧<br>";
+//     $sql ='SHOW TABLES';
+// 	$result = $pdo -> query($sql);
+// 	foreach ($result as $row){
+// 		echo $row[0];
+// 		echo '<br>';
+// 	}
+		
+// 	echo "<br>テーブル5_1_numの中身<br>";
+// 	$sql = 'SELECT * FROM 5_1_num';
+// 	$stmt = $pdo->query($sql);
+// 	$results = $stmt->fetchAll();
+// 	foreach ($results as $row){
+// 		//$rowの中にはテーブルのカラム名が入る
+// 		echo $row['id'].' ';
+// 		echo $row['no'].'<br>';
+// 	}
+// 	echo "<hr><br>";
+	
+// 	echo "<br>テーブル5_1_ediの中身<br>";
+// 	$sql = 'SELECT * FROM 5_1_edi';
+// 	$stmt = $pdo->query($sql);
+// 	$results = $stmt->fetchAll();
+// 	foreach ($results as $row){
+// 		//$rowの中にはテーブルのカラム名が入る
+// 		echo $row['id'].' ';
+// 		echo $row['no'].' ';
+// 		echo $row['comment'].'<br>';
+// 	}
+// 	echo "<hr><br>";
+	
+// 	echo "<br>テーブル5-1の中身<br>";
+// 	$sql = 'SELECT * FROM 5_1';
+// 	$stmt = $pdo->query($sql);
+// 	$results = $stmt->fetchAll();
+// 	foreach ($results as $row){
+// 		//$rowの中にはテーブルのカラム名が入る
+// 		echo $row['id'].' ';
+// 		echo $row['name'].' ';
+// 		echo $row['comment'].' ';
+// 		echo $row['day'].'<br>';
+// 	}
+// 	echo "<hr><br>";
+	
+// 	echo "<br>テーブル5-1_pasの中身<br>";
+// 	$sql = 'SELECT * FROM 5_1_pas';
+// 	$stmt = $pdo->query($sql);
+// 	$results = $stmt->fetchAll();
+// 	foreach ($results as $row){
+// 		//$rowの中にはテーブルのカラム名が入る
+// 		echo $row['id'].' ';
+// 		echo $row['no'].' ';
+// 		echo $row['pas'].'<br>';
+//     }
+// 	echo "<hr><br>";
+	
+// 	echo "<br>テーブル5-1_lastnumberの中身<br>";
+// 	$sql = 'SELECT * FROM 5_1_lastnumber';
+// 	$stmt = $pdo->query($sql);
+// 	$results = $stmt->fetchAll();
+// 	foreach ($results as $row){
+// 		//$rowの中にはテーブルのカラム名が入る
+// 		echo $row['id'].' ';
+// 		echo $row['no'].'<br>';
+// 	}
+// 	echo "<hr><br>";
+	
+	
+// 	echo "テーブル削除<br>";
+// 	$sql = 'DROP TABLE 5_1_num';
+// 	$stmt = $pdo->query($sql);
+	
+// 	$sql = 'DROP TABLE 5_1_edi';
+// 	$stmt = $pdo->query($sql);
+	
+// 	$sql = 'DROP TABLE 5_1';
+// 	$stmt = $pdo->query($sql);
+	
+// 	$sql = 'DROP TABLE 5_1_lastnumber';
+// 	$stmt = $pdo->query($sql);
+	
+// 	$sql = 'DROP TABLE 5_1_pas';
+// 	$stmt = $pdo->query($sql);
+	
+// 	$sql = 'DROP TABLE tbtest';
+// 	$stmt = $pdo->query($sql);
+	
+// 	echo "作成済みテーブル一覧<br>";
+//     $sql ='SHOW TABLES';
+// 	$result = $pdo -> query($sql);
+// 	foreach ($result as $row){
+// 		echo $row[0];
+// 		echo '<br>';
+// 	}
+	
+// 		echo "テーブル構成<br>";
+// 	$sql ='SHOW CREATE TABLE 5_1_edi';
+// 	$result = $pdo -> query($sql);
+// 	foreach ($result as $row){
+// 		echo $row[1];
+// 	}
+// 	echo "<hr>";
+?>
+
+</body>
+</html>
